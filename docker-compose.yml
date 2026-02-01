@@ -1,0 +1,38 @@
+services:
+  viser:
+    image: vln/gen3r:latest
+    container_name: viser-${USER}
+    user: gen3r
+    network_mode: host
+    runtime: nvidia
+    working_dir: /opt/${PROJECT_NAME}
+    tty: true
+    ipc: host
+    privileged: true
+    volumes:
+     - /tmp/.X11-unix:/tmp/.X11-unix:rw
+     - ~/.Xauthority:/home/gen3r/.Xauthority:rw
+     - /mnt/sdc/llama-vid/data/GRScenes:/opt/conda/lib/python3.11/site-packages/internutopia/assets/:rw
+     - /mnt/sdc/llama-vid/data:/opt/${PROJECT_NAME}/data:rw
+     - /mnt/sdc/llama-vid/model_zoo:/opt/${PROJECT_NAME}/model_zoo:rw
+     - /mnt/sdc/llama-vid/data/InternScene-N1/mp3d_pe:/isaac-sim/Matterport3D/data/v1/scans:ro
+     - .:/opt/${PROJECT_NAME}
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - DISPLAY=${DISPLAY}
+      - QT_X11_NO_MITSHM=1
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - XAUTHORITY=/home/gen3r/.Xauthority
+    env_file:
+      - .env.default
+    # build:
+    #   context: .
+    #   dockerfile: docker/Dockerfile.gen3r
+    #   args:
+    #     # - BASE_IMAGE=vln/3dgrut-cu118:latest
+    #     - BASE_IMAGE=vln/3dgrut-cu128:latest
+    #     - PROJECT_NAME=${PROJECT_NAME:-vln_ranger}
+    #     - UID=${UID}
+    #     - GID=${GID}

@@ -503,6 +503,25 @@ export interface GaussianSplatsMessage {
   name: string;
   props: { buffer: Uint32Array; scale: number | [number, number, number] };
 }
+/** Message to create or update a triangle splatting object.
+ *
+ * (automatically generated)
+ */
+export interface SetTriangleSplatsMessage {
+  type: "SetTriangleSplatsMessage";
+  name: string;
+  props: {
+    vertices: Float32Array;
+    triangle_indices: Uint32Array;
+    opacities: Float32Array;
+    vertex_weights: Float32Array | null;
+    colors: Uint8Array<ArrayBuffer> | null;
+    features_dc: Float32Array | null;
+    features_rest: Float32Array | null;
+    sh_degree: number;
+    sigma: number;
+  };
+}
 /** Remove a particular node from the scene.
  *
  * (automatically generated)
@@ -1471,9 +1490,11 @@ export interface GuiFormSubmitMessage {
 /** Bidirectional form dirty signal.
  *
  * - Sent client->server when any input inside the form first changes since
- *   the last submit. The server broadcasts this to all other clients.
+ * the last submit. The server broadcasts this to all other clients.
  * - Sent server->client (broadcast) to propagate dirty state. Clients show
- *   a dirty indicator on the form header on receipt.
+ * a dirty indicator on the form header on receipt.
+ *
+ * (automatically generated)
  */
 export interface GuiFormDirtyMessage {
   type: "GuiFormDirtyMessage";
@@ -1704,6 +1725,7 @@ export type Message =
   | CatmullRomSplineMessage
   | CubicBezierSplineMessage
   | GaussianSplatsMessage
+  | SetTriangleSplatsMessage
   | RemoveSceneNodeMessage
   | GuiFolderMessage
   | GuiFormMessage
@@ -1802,7 +1824,8 @@ export type SceneNodeMessage =
   | ArrowMessage
   | CatmullRomSplineMessage
   | CubicBezierSplineMessage
-  | GaussianSplatsMessage;
+  | GaussianSplatsMessage
+  | SetTriangleSplatsMessage;
 export type GuiComponentMessage =
   | GuiFolderMessage
   | GuiFormMessage
@@ -1856,6 +1879,7 @@ const typeSetSceneNodeMessage = new Set([
   "CatmullRomSplineMessage",
   "CubicBezierSplineMessage",
   "GaussianSplatsMessage",
+  "SetTriangleSplatsMessage",
 ]);
 export function isSceneNodeMessage(
   message: Message,

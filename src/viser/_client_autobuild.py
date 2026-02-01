@@ -129,6 +129,10 @@ def _build_viser_client(out_dir: Path, cached: bool = True) -> None:
         + (";" if sys.platform == "win32" else ":")
         + subprocess_env["PATH"]
     )
+    # Vite's watcher stack can exhaust inotify limits in containerized
+    # environments while building the client. Force polling so the example
+    # can rebuild without requiring host sysctl changes.
+    subprocess_env["CHOKIDAR_USEPOLLING"] = "1"
     npm_path = node_bin_dir / "npm"
 
     if sys.platform == "win32":
