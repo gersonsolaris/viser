@@ -632,6 +632,129 @@ class GaussianSplatHandle(
         self._queue_update("buffer", self.buffer)
 
 
+class TriangleSplatHandle(
+    _ClickableSceneNodeHandle,
+    _messages.TriangleSplatsProps,
+):
+    """Handle for triangle splatting objects.
+
+    **Experimental.** Triangle splatting rendering is still under development.
+
+    Triangle splatting uses triangular mesh primitives with spherical harmonics
+    for view-dependent color rendering.
+    """
+
+    @property
+    def vertices(self) -> npt.NDArray[np.float32]:
+        """Vertex positions. Shape: (V, 3). Synchronized automatically when assigned."""
+        return np.asarray(self._props["vertices"])
+
+    @vertices.setter
+    def vertices(self, vertices: np.ndarray) -> None:
+        assert vertices.ndim == 2 and vertices.shape[1] == 3, (
+            f"vertices must have shape (V, 3), got {vertices.shape}"
+        )
+        self._queue_update("vertices", vertices.astype(np.float32))
+
+    @property
+    def triangle_indices(self) -> npt.NDArray[np.uint32]:
+        """Triangle face indices. Shape: (T, 3). Synchronized automatically when assigned."""
+        return np.asarray(self._props["triangle_indices"])
+
+    @triangle_indices.setter
+    def triangle_indices(self, triangle_indices: np.ndarray) -> None:
+        assert triangle_indices.ndim == 2 and triangle_indices.shape[1] == 3, (
+            f"triangle_indices must have shape (T, 3), got {triangle_indices.shape}"
+        )
+        self._queue_update("triangle_indices", triangle_indices.astype(np.uint32))
+
+    @property
+    def opacities(self) -> npt.NDArray[np.float32]:
+        """Per-vertex opacity values. Shape: (V,). Synchronized automatically when assigned."""
+        return np.asarray(self._props["opacities"])
+
+    @opacities.setter
+    def opacities(self, opacities: np.ndarray) -> None:
+        if opacities.ndim == 2:
+            opacities = opacities.reshape(-1)
+        assert opacities.ndim == 1, (
+            f"opacities must have shape (V,) or (V, 1), got {opacities.shape}"
+        )
+        self._queue_update("opacities", opacities.astype(np.float32))
+
+    @property
+    def vertex_weights(self) -> npt.NDArray[np.float32] | None:
+        """Raw per-vertex weights (pre-sigmoid)."""
+        weights = self._props.get("vertex_weights")
+        return np.asarray(weights) if weights is not None else None
+
+    @vertex_weights.setter
+    def vertex_weights(self, vertex_weights: np.ndarray | None) -> None:
+        if vertex_weights is None:
+            self._queue_update("vertex_weights", None)
+            return
+        if vertex_weights.ndim == 2:
+            vertex_weights = vertex_weights.reshape(-1)
+        assert vertex_weights.ndim == 1, (
+            f"vertex_weights must have shape (V,) or (V, 1), got {vertex_weights.shape}"
+        )
+        self._queue_update("vertex_weights", vertex_weights.astype(np.float32))
+
+    @property
+    def colors(self) -> npt.NDArray[np.uint8] | None:
+        """Per-vertex RGB colors. Shape: (V, 3). Synchronized automatically when assigned."""
+        colors = self._props.get("colors")
+        return np.asarray(colors) if colors is not None else None
+
+    @colors.setter
+    def colors(self, colors: np.ndarray | None) -> None:
+        if colors is not None:
+            assert colors.ndim == 2 and colors.shape[1] == 3, (
+                f"colors must have shape (V, 3), got {colors.shape}"
+            )
+            colors = colors.astype(np.uint8)
+        self._queue_update("colors", colors)
+
+    @property
+    def features_dc(self) -> npt.NDArray[np.float32] | None:
+        """Spherical Harmonics DC component. Shape: (V, 1, 3). Synchronized automatically when assigned."""
+        features_dc = self._props.get("features_dc")
+        return np.asarray(features_dc) if features_dc is not None else None
+
+    @features_dc.setter
+    def features_dc(self, features_dc: np.ndarray | None) -> None:
+        if features_dc is not None:
+            assert features_dc.ndim == 3 and features_dc.shape[1] == 1 and features_dc.shape[2] == 3, (
+                f"features_dc must have shape (V, 1, 3), got {features_dc.shape}"
+            )
+            features_dc = features_dc.astype(np.float32)
+        self._queue_update("features_dc", features_dc)
+
+    @property
+    def features_rest(self) -> npt.NDArray[np.float32] | None:
+        """Spherical Harmonics higher-order components. Shape: (V, SH_rest, 3). Synchronized automatically when assigned."""
+        features_rest = self._props.get("features_rest")
+        return np.asarray(features_rest) if features_rest is not None else None
+
+    @features_rest.setter
+    def features_rest(self, features_rest: np.ndarray | None) -> None:
+        if features_rest is not None:
+            assert features_rest.ndim == 3 and features_rest.shape[2] == 3, (
+                f"features_rest must have shape (V, SH_rest, 3), got {features_rest.shape}"
+            )
+            features_rest = features_rest.astype(np.float32)
+        self._queue_update("features_rest", features_rest)
+
+    @property
+    def sigma(self) -> float:
+        """Size parameter for triangle splats. Synchronized automatically when assigned."""
+        return self._props["sigma"]
+    
+    @sigma.setter
+    def sigma(self, sigma: float) -> None:
+        self._queue_update("sigma", float(sigma))
+
+
 class MeshSkinnedHandle(
     _ClickableSceneNodeHandle,
     _messages.SkinnedMeshProps,

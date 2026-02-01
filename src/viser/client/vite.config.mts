@@ -30,6 +30,10 @@ export default defineConfig(({ command }) => {
     server: {
       port: 3000,
       hmr: { port: 1025 },
+      // Reduce file watcher overhead: exclude node_modules and .nodeenv
+      watch: {
+        ignored: ["**/node_modules/**", "**/.nodeenv/**"],
+      },
     },
     build: {
       outDir: "build",
@@ -54,9 +58,13 @@ export default defineConfig(({ command }) => {
         },
       },
     },
-    // Exclude libultrahdr WASM from optimization (required for @monogrid/gainmap-js).
+    // Exclude libultrahdr WASM and Emscripten modules from optimization
     optimizeDeps: {
-      exclude: ["@monogrid/gainmap-js/libultrahdr"],
+      exclude: [
+        "@monogrid/gainmap-js/libultrahdr",
+        // Exclude WASM sorter from optimization to avoid module externalization
+        "./src/Splatting/WasmSorter/Sorter.mjs",
+      ],
     },
   };
 });

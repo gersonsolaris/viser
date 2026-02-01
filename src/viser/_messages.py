@@ -1714,6 +1714,52 @@ class GaussianSplatsProps:
 
 
 @dataclasses.dataclass
+class SetTriangleSplatsMessage(_CreateSceneNodeMessage):
+    """Message to create or update a triangle splatting object."""
+
+    props: TriangleSplatsProps
+
+
+@dataclasses.dataclass
+class TriangleSplatsProps:
+    """Properties for triangle splatting rendering.
+    
+    Triangle splatting uses triangular mesh primitives with spherical harmonics
+    for view-dependent color rendering, providing efficient visualization of
+    large-scale point cloud data.
+    """
+
+    vertices: npt.NDArray[np.float32]
+    """Vertex positions. Shape: (V, 3)"""
+
+    triangle_indices: npt.NDArray[np.uint32]
+    """Triangle face indices. Shape: (T, 3)"""
+
+    opacities: npt.NDArray[np.float32]
+    """Per-vertex opacity values in range [0, 1]. Shape: (V,)"""
+
+    vertex_weights: Optional[npt.NDArray[np.float32]]
+    """Optional per-vertex raw weights (pre-sigmoid) used for blending/culling."""
+
+    colors: Optional[npt.NDArray[np.uint8]]
+    """Optional per-vertex RGB colors (0-255). Shape: (V, 3). 
+    If provided, will use direct RGB colors instead of SH."""
+
+    features_dc: Optional[npt.NDArray[np.float32]]
+    """Spherical Harmonics DC component (zeroth order). Shape: (V, 1, 3)"""
+
+    features_rest: Optional[npt.NDArray[np.float32]]
+    """Spherical Harmonics higher-order components. Shape: (V, SH_rest, 3)
+    where SH_rest depends on sh_degree: degree 1->3, degree 2->8, degree 3->15"""
+
+    sh_degree: int
+    """Spherical Harmonics degree (0-3). Controls number of SH coefficients."""
+
+    sigma: float
+    """Triangle edge softness parameter. Higher values create softer edges."""
+
+
+@dataclasses.dataclass
 class GetRenderRequestMessage(Message):
     """Message from server->client requesting a render from a specified camera
     pose."""

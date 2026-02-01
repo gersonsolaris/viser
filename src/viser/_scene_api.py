@@ -61,6 +61,7 @@ from ._scene_handles import (
     SpotLightHandle,
     TransformControlsEvent,
     TransformControlsHandle,
+    TriangleSplatHandle,
     _ClickableSceneNodeHandle,
     _TransformControlsState,
 )
@@ -1868,6 +1869,7 @@ class SceneApi:
         covariances: np.ndarray,
         rgbs: np.ndarray,
         opacities: np.ndarray,
+        vertex_weights: np.ndarray | None = None,
         *,
         wxyz: Tuple[float, float, float, float] | np.ndarray = (1.0, 0.0, 0.0, 0.0),
         position: Tuple[float, float, float] | np.ndarray = (0.0, 0.0, 0.0),
@@ -1924,6 +1926,101 @@ class SceneApi:
             ),
         )
         node_handle = GaussianSplatHandle._make(
+            self, message, name, wxyz, position, visible
+        )
+        return node_handle
+
+    @deprecated_positional_shim
+    def add_triangle_splats(
+        self,
+        name: str,
+        vertices: np.ndarray,
+        triangle_indices: np.ndarray,
+        opacities: np.ndarray,
+        *,
+        vertex_weights: np.ndarray | None = None,
+        colors: np.ndarray | None = None,
+        features_dc: np.ndarray | None = None,
+        features_rest: np.ndarray | None = None,
+        sh_degree: int = 0,
+        sigma: float = 1.0,
+        wxyz: Tuple[float, float, float, float] | np.ndarray = (1.0, 0.0, 0.0, 0.0),
+        position: Tuple[float, float, float] | np.ndarray = (0.0, 0.0, 0.0),
+        visible: bool = True,
+    ) -> TriangleSplatHandle:
+        """Add a triangle splatting model to the scene.
+
+        Triangle splatting uses triangular mesh primitives with spherical harmonics
+        for view-dependent color rendering, providing efficient visualization of
+        large-scale point cloud data.
+
+        **Experimental.** This feature is experimental and still under development.
+
+        Arguments:
+            name: Scene node name.
+            vertices: Vertex positions. (V, 3).
+            triangle_indices: Triangle face indices. (T, 3).
+            opacities: Per-vertex opacity values in range [0, 1]. (V,) or (V, 1).
+            vertex_weights: Optional per-vertex raw weights (pre-sigmoid). Shape (V,) or (V, 1).
+            colors: Optional per-vertex RGB colors (0-255). (V, 3). If provided,
+                will use direct RGB colors instead of spherical harmonics.
+            features_dc: Spherical Harmonics DC component (zeroth order). (V, 1, 3).
+            features_rest: Spherical Harmonics higher-order components. (V, SH_rest, 3).
+            sh_degree: Spherical Harmonics degree (0-3).
+            sigma: Triangle edge softness parameter. Higher values create softer edges.
+            wxyz: R_parent_local transformation.
+            position: t_parent_local transformation.
+            visible: Initial visibility of scene node.
+
+        Returns:
+            Scene node handle.
+        """
+        num_vertices = vertices.shape[0]
+        num_triangles = triangle_indices.shape[0]
+
+        assert vertices.shape == (num_vertices, 3), f"vertices must have shape (V, 3), got {vertices.shape}"
+        assert triangle_indices.shape == (num_triangles, 3), f"triangle_indices must have shape (T, 3), got {triangle_indices.shape}"
+        
+        # Handle opacities shape
+        if opacities.ndim == 1:
+            opacities = opacities[:, None]
+        assert opacities.shape == (num_vertices, 1), f"opacities must have shape (V,) or (V, 1), got {opacities.shape}"
+
+        if vertex_weights is not None:
+            if vertex_weights.ndim == 1:
+                vertex_weights = vertex_weights[:, None]
+            assert vertex_weights.shape == (num_vertices, 1), (
+                f"vertex_weights must have shape (V,) or (V, 1), got {vertex_weights.shape}"
+            )
+
+        # Validate color or SH inputs
+        if colors is not None:
+            assert colors.shape == (num_vertices, 3), f"colors must have shape (V, 3), got {colors.shape}"
+            assert features_dc is None and features_rest is None, "Cannot provide both colors and SH features"
+        else:
+            if features_dc is not None:
+                assert features_dc.shape == (num_vertices, 1, 3), f"features_dc must have shape (V, 1, 3), got {features_dc.shape}"
+            if features_rest is not None:
+                expected_sh_components = (sh_degree + 1) ** 2 - 1
+                assert features_rest.shape[0] == num_vertices, f"features_rest must have {num_vertices} vertices"
+                assert features_rest.shape[1] == expected_sh_components, f"features_rest must have {expected_sh_components} components for degree {sh_degree}"
+                assert features_rest.shape[2] == 3, f"features_rest must have 3 color channels"
+
+        message = _messages.SetTriangleSplatsMessage(
+            name=name,
+            props=_messages.TriangleSplatsProps(
+                vertices=vertices.astype(np.float32),
+                triangle_indices=triangle_indices.astype(np.uint32),
+                opacities=opacities.astype(np.float32).reshape(-1),
+                colors=colors.astype(np.uint8) if colors is not None else None,
+                features_dc=features_dc.astype(np.float32) if features_dc is not None else None,
+                features_rest=features_rest.astype(np.float32) if features_rest is not None else None,
+                sh_degree=sh_degree,
+                sigma=sigma,
+                vertex_weights=vertex_weights.astype(np.float32).reshape(-1) if vertex_weights is not None else None,
+            ),
+        )
+        node_handle = TriangleSplatHandle._make(
             self, message, name, wxyz, position, visible
         )
         return node_handle
