@@ -44,6 +44,7 @@ import {
 import { CameraFrustumComponent } from "./CameraFrustumVariants";
 import { SceneNodeMessage } from "./WebsocketMessages";
 import { SplatObject } from "./Splatting/GaussianSplats";
+import { TriangleSplatsObject } from "./Splatting/TriangleSplats";
 import { Paper } from "@mantine/core";
 import GeneratedGuiContainer from "./ControlPanel/Generated";
 import { LineSegments } from "./Line";
@@ -555,6 +556,89 @@ function createObjectFactory(
             {children}
           </SplatObject>
         ),
+      };
+    }
+    case "SetTriangleSplatsMessage": {
+      return {
+        makeObject: (ref, children) => {
+          const { props } = message;
+          
+          // Convert Uint8Array to typed arrays
+          const vertices = new Float32Array(
+            props.vertices.buffer.slice(
+              props.vertices.byteOffset,
+              props.vertices.byteOffset + props.vertices.byteLength,
+            ),
+          );
+          
+          const triangle_indices = new Uint32Array(
+            props.triangle_indices.buffer.slice(
+              props.triangle_indices.byteOffset,
+              props.triangle_indices.byteOffset + props.triangle_indices.byteLength,
+            ),
+          );
+          
+          const opacities = new Float32Array(
+            props.opacities.buffer.slice(
+              props.opacities.byteOffset,
+              props.opacities.byteOffset + props.opacities.byteLength,
+            ),
+          );
+
+          const vertex_weights = props.vertex_weights
+            ? new Float32Array(
+                props.vertex_weights.buffer.slice(
+                  props.vertex_weights.byteOffset,
+                  props.vertex_weights.byteOffset +
+                    props.vertex_weights.byteLength,
+                ),
+              )
+            : undefined;
+          
+          const colors = props.colors
+            ? new Uint8Array(
+                props.colors.buffer.slice(
+                  props.colors.byteOffset,
+                  props.colors.byteOffset + props.colors.byteLength,
+                ),
+              )
+            : undefined;
+          
+          const features_dc = props.features_dc
+            ? new Float32Array(
+                props.features_dc.buffer.slice(
+                  props.features_dc.byteOffset,
+                  props.features_dc.byteOffset + props.features_dc.byteLength,
+                ),
+              )
+            : undefined;
+          
+          const features_rest = props.features_rest
+            ? new Float32Array(
+                props.features_rest.buffer.slice(
+                  props.features_rest.byteOffset,
+                  props.features_rest.byteOffset + props.features_rest.byteLength,
+                ),
+              )
+            : undefined;
+          
+          return (
+            <TriangleSplatsObject
+              ref={ref}
+              vertices={vertices}
+              triangle_indices={triangle_indices}
+              opacities={opacities}
+              vertex_weights={vertex_weights}
+              colors={colors}
+              features_dc={features_dc}
+              features_rest={features_rest}
+              sh_degree={props.sh_degree}
+              sigma={props.sigma}
+            >
+              {children}
+            </TriangleSplatsObject>
+          );
+        },
       };
     }
 

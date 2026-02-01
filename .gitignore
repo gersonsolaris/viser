@@ -1,3 +1,8 @@
+package-lock.json
+vendor
+model_zoo
+data
+.venv
 *.swp
 *.swo
 *.pyc
